@@ -1,0 +1,23 @@
+220 TsinghuaMailServer ESMTP mail service ready
+HELO mails.tsinghua.edu.cn
+250 OK
+AUTH LOGIN
+334 dXNlcm5hbWU6
+334 ************
+235 Authentication successful
+MAIL FROM:<liyuyang20@mails.tsinghua.edu.cn>
+250 Mail OK
+RCPT TO:<i@aidenli.net>
+250 Mail OK
+DATA
+354 End data with <CR><LF>.<CR><LF>
+DATE: Friday, November 18, 2022 at 2:55:25 PM China Standard Time
+From: Yuyang Li<liyuyang20@mails.tsinghua.edu.cn>
+To: Aiden Li<i@aidenli.net>
+SUBJECT:The N-th Electronic Mail From THU to Aiden
+
+Across the Great Firewall we can reach every corner in the world.
+.
+250 Mail OK queued as zAQGZQAnXNxbLHdjYNX5Ag--.49385S2
+QUIT
+221 Bye
