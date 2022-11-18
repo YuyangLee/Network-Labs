@@ -17,7 +17,7 @@ public class SimpleSender {
 		/** 与邮件服务器建立TCP连接. */
 		// TODO: 1.在""中填入我们的smtp服务器和正确端口，清华邮件服务器mails.tsinghua.edu.cn，端口是25
 		// e.g. Socket socket = new Socket("mails.163.com",25);
-		Socket socket = new Socket("", 25);
+		Socket socket = new Socket("mails.tsinghua.edu.cn", 25);
 
 		/** 创建BufferedReader每次读入一行信息. */
 		InputStream is = socket.getInputStream();
