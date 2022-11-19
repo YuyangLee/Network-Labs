@@ -7,11 +7,11 @@ from models.Message import Message
 
 
 class ChatClient(ChatPeer):
-    def __init__(self, client_name, client_id, server_addr, server_port)
+    def __init__(self, client_name, client_id, server_addr, server_port):
         super().__init__("CLIENT", client_name, client_id)
         
         self.log = logging.getLogger(__name__)
-        self.log.log(f"{ self.type } { self.name }(ID: { self.id }) initialized.")
+        self.log.log(20, f"{ self.type } { self.name }(ID: { self.id }) initialized.")
 
         self.set_server(server_addr, server_port)
 
@@ -24,7 +24,7 @@ class ChatClient(ChatPeer):
             self.client_server = socket(AF_INET, SOCK_STREAM)
             self.client_server.connect((self.server_addr, self.server_port))
             MsgRecvThread(self.client_server, self.on_recv_msg, max_msg_len=1024).start()
-            self.log.log(f"Connected to server at { self.server_addr }:{ self.server_port }")
+            self.log.log(20, f"Connected to server at { self.server_addr }:{ self.server_port }")
         except Exception as ex:
             self.log.error(f"Failed to connect to server at { self.server_addr }:{ self.server_port }. { ex }")
         
@@ -48,7 +48,7 @@ class MsgRecvThread(Thread):
             try:
                 msg_str = self.conn_socket.recv(self.max_msg_len).decode('utf-8')
                 self.handler(msg_str)
-                self.log.log(f"Received message from { self.conn_socket.getpeername() }.")
+                self.log.log(20, f"Received message from { self.conn_socket.getpeername() }.")
             except Exception as ex:
                 self.log.error(f"Failed to receive message from server. { ex }")
                 return
@@ -65,7 +65,7 @@ class MsgSendThread(Thread):
     def run(self):
         try:
             self.conn_socket.send(self.msg.to_json_str().encode('utf-8'))
-            self.log.log(f"Sent message to { self.conn_socket.getpeername() }.")
+            self.log.log(20, f"Sent message to { self.conn_socket.getpeername() }.")
         except Exception as ex:
             self.log.error(f"Failed to send message to server. { ex }")
             

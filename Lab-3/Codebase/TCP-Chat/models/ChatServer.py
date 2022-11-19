@@ -11,20 +11,20 @@ class ChatServer(ChatPeer):
         super().__init__("SERVER", server_name, server_id)
         
         self.log = logging.getLogger(__name__)
-        self.log.log(f"{ self.type } { self.name }(ID: { self.id }) initialized.")
+        self.log.log(20, f"{ self.type } { self.name }(ID: { self.id }) initialized.")
         
         self.welcome_socket = get_socket()
         self.__bind_addr = server_addr
         self.__bind_port = server_port
         try:
             self.welcome_socket.bind((self.__bind_addr, self.__bind_port))
-            self.log.log(f"{self.identify_string} binded to [{ self.bind_addr}:{ self.bind_port }].")
+            self.log.log(20, f"{self.identify_string} binded to [{ self.bind_addr}:{ self.bind_port }].")
         except Exception as ex:
             pass
         
     def start(self):
         self.client_pool = []
-        listen_thread = ServerListenThread(self.welcome_socket, self.on_recv_conn, self.log, long=False, max_msg_len=1024)
+        listen_thread = ServerListenThread(self.welcome_socket, self.on_recv_conn, self.log, long=False)
         listen_thread.start()
         
     # def stop(self):
@@ -38,7 +38,7 @@ class ChatServer(ChatPeer):
             msg_dict = json.loads(res.decode('utf-8'))
             if msg_dict['type'] == 'CTL':
                 self.client_pool.append(ServerRecvThread(conn_socket, self.on_recv_msg, max_msg_len=1024))
-                self.log.log(f"Connected to client at socket { socket.getsockname }")
+                self.log.log(20, f"Connected to client at socket { socket.getsockname }")
             else:
                 raise Exception("Invalid message type. Connection socket should be in a CTL message.")
         except Exception as ex:
@@ -51,7 +51,7 @@ class ChatServer(ChatPeer):
             
             sender_name, sender_ip, send_time, body = msg.unpack()
             body_hash = msg.get_body_hash()
-            self.log.log(f"Ceceived message from { sender_name }({ sender_ip }). Message was sent at { send_time }. Message body MD5: { body_hash }")
+            self.log.log(20, f"Ceceived message from { sender_name }({ sender_ip }). Message was sent at { send_time }. Message body MD5: { body_hash }")
             self.broadcast_msg(msg)
         except Exception as ex:
             self.log.error(f"Ceceived invalid message from client. Message: { msg_json_str }")
@@ -81,7 +81,7 @@ class ServerListenThread(Thread):
                 conn_socket, addr = self.welcome_socket.accept()
                 self.recv_handler(conn_socket, addr)
             except:
-                self.log.log(f"Received an error connection from { addr }.")
+                self.log.error(f"Received an error connection from { addr }.")
 
 class ServerRecvThread(Thread):
     def __init__(self, conn_socket: socket, recv_handler, max_msg_len=1024):
@@ -112,7 +112,7 @@ class SendThread(Thread):
     def run(self):
         try:
             self.conn_socket.send(self.msg_str.encode('utf-8'))
-            self.log.log(f"Sent message to { self.conn_socket.getpeername() }")
+            self.log.log(20, f"Sent message to { self.conn_socket.getpeername() }")
             
             if self.handler is not None:
                 self.handler(self.conn_socket)
