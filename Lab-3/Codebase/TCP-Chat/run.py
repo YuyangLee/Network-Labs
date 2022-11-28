@@ -7,30 +7,59 @@ Description: Unified entry point for the TCP Chat application.
 '''
 
 import argparse
-from uuid import uuid4
-from models.ChatClient import ChatClient
-from models.ChatServer import ChatServer
+import logging
+import os
+from time import sleep
+
+from utils.utils_id import gen_id
+
 
 def get_args():
     parser = argparse.ArgumentParser()
     
-    parser.add_argument("--mode", default='client', type=str)
-    # parser.add_argument("--bind_addr", default="127.0.0.1", type=str)
-    # parser.add_argument("--bind_port", default=10000, type=int)
-    parser.add_argument("--server_addr", default="127.0.0.1", type=str)
-    parser.add_argument("--server_port", default=20000, type=int)
+    parser.add_argument("--mode", default='server', type=str)
+    parser.add_argument("--server_addr", default="localhost", type=str)
+    parser.add_argument("--server_port", default=2222, type=int)
+    parser.add_argument("--name", default="Server", type=str)
+    parser.add_argument("--log", default="log/server.log", type=str)
     
     return parser.parse_args()
 
+def init(args):
+    LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
+    logging.basicConfig(filename=args.log, level=logging.DEBUG, format=LOG_FORMAT)
+    os.makedirs(os.path.dirname(args.log), exist_ok=True)
+    
 if __name__ == '__main__':
     args = get_args()
     
+    init(args)
+
+    
     if args.mode == 'server':
-        server = ChatServer("ServerName", str(uuid4()), args.server_addr, args.server_port)
+        from models.ChatServer import ChatServer
+        server = ChatServer(args.name, gen_id(), args.server_addr, args.server_port)
         server.start()
         
     elif args.mode == 'client':
-        client = ChatClient("ClientName", str(uuid4()), args.server_addr, args.server_port)
-        client.bind(args.bind_addr, args.bind_port)
-        client.connect(args.server_addr, args.server_port)
+        from models.ChatClient import ChatClient
+        client = ChatClient(args.name, gen_id(), args.server_addr, args.server_port)
+        if client.start():
+            client.send_msg("HELO", type='CTL')
+        
+        while True:
+            line = input("$ ")
+            flag = client.parse_line(line)
+
+            if flag == -1:
+                pass
+            elif flag == 0:
+                input("See you next time! Press ENTER to exit...")
+                break
+            elif flag == 1:
+                input(f"Error occured! Please refer to the log at { args.log }. Press any key to exit...")
+                print("")
+            
+            
+        exit()
         
