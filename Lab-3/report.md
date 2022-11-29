@@ -99,7 +99,30 @@ python run.py --mode server --name Alice --server_addr ADDR --server_port PORT -
 - 服务端不需要指定 `server_addr`
 - 而应当允许防火墙在 `server_port` 端口的 TCP 出入连接。
 
-以
+在服务器上启动服务器，以 `himalia.adeinli.net:12333` 为例，分别从 2 台设备的 3 个 shell 启动客户端连接服务器，测试：
+
+1. 连接服务器；
+2. 收发消息；
+3. 手动退出程序；
+4. 客户端程序中断，不影响服务端；重新连接并回到会话。
+
+#### Alice、Bob （同一个出口 IP，不同端口）
+
+![Chat.Alice.Bob.Run](assets\Chat.Alice.Bob.Run.png)
+
+#### Charlie（不同出口 IP）
+
+![TCP.Charlie.Msg](assets\TCP.Charlie.Msg.png)
+
+#### Log 数据
+
+客户端，以 Alice、Bob 的 log 为例：
+
+![Chat.Alice.Bob.Log](assets\Chat.Alice.Bob.Log.png)
+
+服务器端（节选）：
+
+![image-20221130031115853](assets\Chat.Server.Log.png)
 
 ## 思考题与分析题
 
