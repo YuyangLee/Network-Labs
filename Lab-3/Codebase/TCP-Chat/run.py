@@ -18,8 +18,8 @@ def get_args():
     parser = argparse.ArgumentParser()
     
     parser.add_argument("--mode", default='server', type=str)
-    parser.add_argument("--server_addr", default="localhost", type=str)
-    parser.add_argument("--server_port", default=12334, type=int)
+    parser.add_argument("--server_addr", default="himalia.aidenli.net", type=str)
+    parser.add_argument("--server_port", default=12333, type=int)
     parser.add_argument("--name", default="Server", type=str)
     parser.add_argument("--log", default="log/server.log", type=str)
     
