@@ -20,7 +20,6 @@ class ChatPeer:
         
         self.identify_string = f"{ self.type } { self.name }({ self.id })"
         
-        
 
 class SendThread(Thread):
     def __init__(self, conn_socket: socket, msg_str: str, handler=None, fail_handler=None):

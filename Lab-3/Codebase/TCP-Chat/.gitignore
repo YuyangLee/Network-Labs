@@ -1,2 +1,4 @@
 .vscode
 archive
+log
+__pycache__

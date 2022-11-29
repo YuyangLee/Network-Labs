@@ -38,7 +38,8 @@ class ChatClient(ChatPeer):
             self.client_socket.connect((self.server_addr, self.server_port))
             logging.info(f"Connected to server at { self.server_addr }:{ self.server_port }")  
             
-            self.recv_thrd = MsgRecvThread(self.client_socket, self.on_recv_msg, max_msg_len=1024)
+            self.exit_event = Event()
+            self.recv_thrd = MsgRecvThread(self.exit_event, self.client_socket, self.on_recv_msg, max_msg_len=1024)
             self.recv_thrd.start()
             
             return -1
@@ -52,9 +53,9 @@ class ChatClient(ChatPeer):
         
     
     def stop(self):
-        self.send_msg("", type='BYE')
+        self.send_msg("BYE", type='CTL')
         self.client_socket.shutdown(SHUT_RDWR)
-        self.recv_thrd
+        self.exit_event.set()
     
     def execute_cmd(self, cmd, arg=None):
         if cmd == 'q':
@@ -66,6 +67,8 @@ class ChatClient(ChatPeer):
     def parse_line(self, line):
         if line == "":
             return -1
+        if line[:2] == "::":
+            return self.send_msg(line[1:], type='MSG')
         if line[0] == ':':
             ca = re.match(r'([a-z]{1,3})\s(.*)', line[1:])
             if ca:
@@ -81,9 +84,10 @@ class ChatClient(ChatPeer):
         return -1
     
 class MsgRecvThread(Thread):
-    def __init__(self, conn_socket: socket, handler, max_msg_len=1024):
+    def __init__(self, exit_event: Event, conn_socket: socket, handler, max_msg_len=1024):
         super().__init__()
         
+        self.exit_event = exit_event
         self.handler = handler
         self.conn_socket = conn_socket
         self.max_msg_len = max_msg_len
@@ -95,6 +99,9 @@ class MsgRecvThread(Thread):
                 self.handler(msg_str)
                 logging.info(f"Received message from { self.conn_socket.getpeername() }.")
             except Exception as ex:
+                if self.exit_event.is_set():
+                    logging.info(f"Connection to server is now closed.")
+                    return
                 logging.error(f"Failed to receive message from server. { ex }")
                 return
               

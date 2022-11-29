@@ -19,16 +19,16 @@ def get_args():
     
     parser.add_argument("--mode", default='server', type=str)
     parser.add_argument("--server_addr", default="localhost", type=str)
-    parser.add_argument("--server_port", default=2222, type=int)
+    parser.add_argument("--server_port", default=12334, type=int)
     parser.add_argument("--name", default="Server", type=str)
     parser.add_argument("--log", default="log/server.log", type=str)
     
     return parser.parse_args()
 
 def init(args):
+    os.makedirs(os.path.dirname(args.log), exist_ok=True)
     LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
     logging.basicConfig(filename=args.log, level=logging.DEBUG, format=LOG_FORMAT)
-    os.makedirs(os.path.dirname(args.log), exist_ok=True)
     
 if __name__ == '__main__':
     args = get_args()
@@ -48,7 +48,8 @@ if __name__ == '__main__':
             client.send_msg("HELO", type='CTL')
         
         while True:
-            line = input("$ ")
+            line = input("")
+            # line = input("$ ")
             flag = client.parse_line(line)
 
             if flag == -1:

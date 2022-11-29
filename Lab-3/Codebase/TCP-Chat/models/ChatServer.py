@@ -2,7 +2,7 @@ import json
 import logging
 from datetime import datetime
 from socket import *
-from threading import Thread
+from threading import Event, Thread
 
 from utils.utils_id import gen_id
 from utils.utils_socket import get_socket
@@ -28,6 +28,7 @@ class ChatServer(ChatPeer):
         
     def start(self):
         self.client_pool = {}
+        self.exit_events = {}
         logging.info(f"{ self.identify_string } starts listening on port { self.__bind_addr }:{ self.__bind_port }.")
         listen_thread = ServerListenThread(self.welcome_socket, self.on_recv_conn, long=False)
         listen_thread.start()
@@ -45,11 +46,15 @@ class ChatServer(ChatPeer):
                 while id in self.client_pool:
                     id = gen_id()
                     
-                ServerRecvThread(id, conn_socket, self.on_recv_msg, max_msg_len=1024).start()
-                self.client_pool[id] = conn_socket
+                sender_ip, sender_port = conn_socket.getpeername()
                 
-                sender_ip, _ = conn_socket.getpeername()
                 self.broadcast_sys_msg(f"{ msg_dict['sender_name'] }({ sender_ip }) is now online!", except_list=[id])
+                
+                # Bradcast before connecting to remove last connection. Can be remedied with keep alive or sth like that...
+                
+                self.exit_events[id] = Event()                    
+                self.client_pool[id] = conn_socket
+                ServerRecvThread(self.exit_events[id], id, conn_socket, self.on_recv_msg, max_msg_len=1024).start()
             
             else:
                 raise Exception("Invalid message type. Connection socket should be in a CTL message with \"HELO\".")
@@ -58,16 +63,15 @@ class ChatServer(ChatPeer):
         
     def on_recv_msg(self, from_conn_id: str, msg: Message):
         try:
-            sender_name, send_time, body, sender_ip, type= msg.unpack()
-            body_hash = "HASH" # msg.get_body_hash()
-            logging.info(f"Received { type } message from { sender_name }({ sender_ip }). Message was sent at { send_time }. Message body MD5: { body_hash }")
+            sender_name, send_time, body, sender_ip, sender_port, type= msg.unpack()
+            logging.info(f"Received { type } message from { sender_name }({ sender_ip }:{ sender_port }). Message was sent at { send_time }.")
             
             if type == "MSG":
                 self.broadcast_msg(msg, [from_conn_id])
                 
-            elif type == "BYE":
+            elif type == "CTL" and body == "BYE":
                 self.broadcast_sys_msg(f"{ sender_name }({ sender_ip }) is now offline!", except_list=[from_conn_id])
-                self.rm_conn_socket(from_conn_id)
+                self.disconn_socket(from_conn_id)
                 
         except Exception as ex:
             logging.error(f"Received invalid message from client. Message: { ex }")
@@ -78,16 +82,23 @@ class ChatServer(ChatPeer):
         for conn_id, client_socket in self.client_pool.items():
             if conn_id in except_list:
                 continue
-            SendThread(client_socket, msg_json, handler=handler, fail_handler=lambda x: self.rm_conn_socket(conn_id)).start()
+            SendThread(client_socket, msg_json, handler=handler, fail_handler=lambda x: self.disconn_socket(conn_id)).start()
             
     def broadcast_sys_msg(self, msg_str: str, except_list: list, handler=None):
-        msg = gen_message_raw("System", msg_str, "MSG", sender_ip=self.__bind_addr, send_time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        msg = gen_message_raw("System", msg_str, "MSG", sender_ip=None, sender_port=None, send_time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
         self.broadcast_msg(msg, except_list, handler)
             
-    def rm_conn_socket(self, from_conn_id: str):
-        self.client_pool[from_conn_id].shutdown(SHUT_RDWR)
-        del self.client_pool[from_conn_id]
-        logging.info(f"Removed connection socket { from_conn_id } from client pool.")
+    def disconn_socket(self, from_conn_id: str):
+        if from_conn_id in self.exit_events:
+            self.exit_events[from_conn_id].set()
+            del self.exit_events[from_conn_id]
+            
+        if from_conn_id in self.client_pool:
+            try:
+                self.client_pool[from_conn_id].shutdown(SHUT_RDWR)
+            finally:
+                del self.client_pool[from_conn_id]
+            logging.info(f"Removed connection socket { from_conn_id } from client pool.")
         
             
 class ServerListenThread(Thread):
@@ -110,9 +121,10 @@ class ServerListenThread(Thread):
                 pass
 
 class ServerRecvThread(Thread):
-    def __init__(self, conn_id: str, conn_socket: socket, recv_handler, max_msg_len=1024):
+    def __init__(self, exit_event: Event, conn_id: str, conn_socket: socket, recv_handler, max_msg_len=1024):
         super().__init__()
         
+        self.exit_event = exit_event
         self.conn_id = conn_id
         self.conn_socket = conn_socket
         
@@ -128,11 +140,15 @@ class ServerRecvThread(Thread):
                 msg_json_str = self.conn_socket.recv(self.max_msg_len).decode('utf-8')
                 msg_dict = json.loads(msg_json_str)
                 msg_dict['sender_ip'] = self.peer
+                msg_dict['sender_port'] = self.tg_port
                 msg_dict['send_time'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 
                 msg = gen_message(msg_dict)
                 logging.info(f"Received message from client, broad casting...")
                 self.recv_handler(self.conn_id, msg)
             except Exception as ex:
+                if self.exit_event.is_set():
+                    logging.info(f"Connection { self.conn_id } is now closed.")
+                    break
                 logging.error(f"Received invalid message from client. { ex }")
                 break
