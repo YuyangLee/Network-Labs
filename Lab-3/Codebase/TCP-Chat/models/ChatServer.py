@@ -96,6 +96,8 @@ class ChatServer(ChatPeer):
         if from_conn_id in self.client_pool:
             try:
                 self.client_pool[from_conn_id].shutdown(SHUT_RDWR)
+            except:
+                logging.info(f"Connection socket { from_conn_id } cannot be connected.")
             finally:
                 del self.client_pool[from_conn_id]
             logging.info(f"Removed connection socket { from_conn_id } from client pool.")
