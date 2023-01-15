@@ -55,11 +55,3 @@ void tcp_rx(ConnectionIdentifier &conn, std::vector<uint8_t> &bytes) {
     // TODO 请实现此函数
     std::cout << "tcp_rx" << conn << bytes.data() << std::endl;
 }
-
-/**
- * 这个函数会每至少100ms调用一次，以保证控制权可以定期的回到你实现的函数中，而不是一直阻塞在main文件里面。
- * 它可以被用来在不开启多线程的情况下实现超时重传等功能，详见主仓库的README.md
- */
-void tick() {
-    // TODO 可实现此函数，也可不实现
-}
