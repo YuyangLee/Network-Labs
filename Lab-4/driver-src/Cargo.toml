@@ -1,0 +1,21 @@
+[package]
+name = "network_exp4_driver"
+version = "1.1.0"
+edition = "2021"
+description = "计算机网络及应用 实验四 TCP协议实现 驱动程序\n本程序运行时，可以捕获正常的TCP socket连接，并将其转发给自定义的TCP协议实现。"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+tokio = { version = "1.24", features = ["full"] }
+libc = "0.2"
+anyhow = { version = "1.0", features = ["backtrace"] }
+lazy_static = "1.4"
+pnet_packet = "0.31"
+rand = "0.8"
+clap = { version = "4.0", features = ["derive"] }
+serde = "1.0"
+bson = "2.4"
+
+[profile.release]
+panic = "abort"
